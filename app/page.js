@@ -17,7 +17,7 @@ const blank={date:'',mileage:'',service_type:'Oil Change',oil_spec:'0W-20 Dexos1
 
 export default function Page(){
   const [session,setSession]=useState(null);
-  const [email,setEmail]=useState(allowedEmail);
+  const [email,setEmail]=useState('');
   const [password,setPassword]=useState('');
   const [loginStatus,setLoginStatus]=useState('');
   const [entries,setEntries]=useState([]);
@@ -151,7 +151,7 @@ export default function Page(){
 
       <div style={s.loginRow}>
         {isAdmin ? <>
-          <span style={s.adminBadge}>Owner mode: {session.user.email}</span>
+          <span style={s.adminBadge}>Admin Access</span>
           <button style={s.btnLight} onClick={signOut}>Sign Out</button>
         </> : <>
           <input style={s.loginInput} value={email} onChange={e=>setEmail(e.target.value)} placeholder="Owner email" />
