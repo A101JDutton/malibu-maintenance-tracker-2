@@ -1,5 +1,5 @@
 {
-  "name": "malibu-tracker",
+  "name": "malibu-tracker-save-data-photos",
   "private": true,
   "scripts": {
     "dev": "next dev",
