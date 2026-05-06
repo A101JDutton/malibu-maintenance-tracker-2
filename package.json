@@ -1,5 +1,5 @@
 {
-  "name": "malibu-tracker-supabase",
+  "name": "malibu-tracker-public-view-private-edit",
   "private": true,
   "scripts": {
     "dev": "next dev",

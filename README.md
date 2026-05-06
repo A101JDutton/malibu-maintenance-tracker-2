@@ -1,26 +1,19 @@
-# Malibu Maintenance Tracker — Supabase Cloud Sync
+# Malibu Tracker — Public View, Private Edit
 
-## What this version does
-- Syncs maintenance records across browsers/devices
-- Uploads receipt and odometer photos to Supabase Storage
-- Saves current mileage and oil interval in Supabase
+Anyone can view the maintenance log. Only your allowed email can add/delete/update.
 
-## Files
-- app/layout.js
-- app/page.js
-- package.json
-- next.config.js
-- supabase-setup.sql
+## Vercel Environment Variables
 
-## Setup
-1. Create a free Supabase project.
-2. Open Supabase SQL Editor.
-3. Paste and run everything in `supabase-setup.sql`.
-4. In Supabase, go to Project Settings > API.
-5. Copy:
-   - Project URL
-   - anon public key
-6. In Vercel, add environment variables:
-   - NEXT_PUBLIC_SUPABASE_URL = your Project URL
-   - NEXT_PUBLIC_SUPABASE_ANON_KEY = your anon public key
-7. Redeploy your Vercel project.
+Add these:
+
+NEXT_PUBLIC_SUPABASE_URL=your Supabase Project URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your Supabase anon public key
+NEXT_PUBLIC_ALLOWED_EMAIL=your@email.com
+
+## Supabase Setup
+
+1. Open `supabase-setup-public-view-private-edit.sql`
+2. Replace `your-email@example.com` with your real email
+3. Run it in Supabase SQL Editor
+4. In Supabase Authentication settings, enable Email OTP/Magic Link
+5. Redeploy on Vercel
