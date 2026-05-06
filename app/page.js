@@ -4,7 +4,7 @@ import {createClient} from '@supabase/supabase-js';
 
 const url=process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const allowedEmail=process.env.NEXT_PUBLIC_ALLOWED_EMAIL || '';
+const allowedEmail=(process.env.NEXT_PUBLIC_ALLOWED_EMAIL || 'gageshaw73@gmail.com').toLowerCase();
 const ready=Boolean(url&&key);
 const supabase=ready?createClient(url,key):null;
 const BUCKET='maintenance-photos';
@@ -17,7 +17,8 @@ const blank={date:'',mileage:'',service_type:'Oil Change',oil_spec:'0W-20 Dexos1
 
 export default function Page(){
   const [session,setSession]=useState(null);
-  const [loginEmail,setLoginEmail]=useState('');
+  const [email,setEmail]=useState(allowedEmail);
+  const [password,setPassword]=useState('');
   const [loginStatus,setLoginStatus]=useState('');
   const [entries,setEntries]=useState([]);
   const [currentMileage,setCurrentMileage]=useState('');
@@ -25,7 +26,7 @@ export default function Page(){
   const [form,setForm]=useState(blank);
   const [status,setStatus]=useState(ready?'Loading public data...':'Missing Supabase environment variables');
 
-  const isAdmin=session?.user?.email && (!allowedEmail || session.user.email.toLowerCase()===allowedEmail.toLowerCase());
+  const isAdmin=session?.user?.email?.toLowerCase()===allowedEmail;
 
   useEffect(()=>{
     if(!ready)return;
@@ -48,22 +49,29 @@ export default function Page(){
     setStatus('Public data loaded');
   }
 
-  async function sendLoginLink(){
-    if(!loginEmail){alert('Enter your email first.');return;}
-    if(allowedEmail && loginEmail.toLowerCase()!==allowedEmail.toLowerCase()){
-      alert('That email is not allowed to edit this tracker.');
+  async function passwordLogin(){
+    if(email.toLowerCase()!==allowedEmail){
+      alert('Only the owner email can edit this tracker.');
       return;
     }
-    setLoginStatus('Sending login link...');
-    const {error}=await supabase.auth.signInWithOtp({email:loginEmail,options:{emailRedirectTo:window.location.origin}});
-    setLoginStatus(error?'Login error: '+error.message:'Check your email for the login link.');
+    if(!password){
+      alert('Enter your password.');
+      return;
+    }
+    setLoginStatus('Signing in...');
+    const {error}=await supabase.auth.signInWithPassword({email,password});
+    if(error){
+      setLoginStatus('Login failed: '+error.message);
+      return;
+    }
+    setLoginStatus('Logged in.');
   }
 
   async function signOut(){await supabase.auth.signOut();}
 
   function requireAdmin(){
     if(!isAdmin){
-      alert('Only the owner can change records. View-only mode is public.');
+      alert('Only the owner can change records. Everyone else is view-only.');
       return false;
     }
     return true;
@@ -138,15 +146,17 @@ export default function Page(){
   return <main style={s.page}>
     <section style={s.hero}>
       <h1 style={s.h1}>Malibu Maintenance Tracker</h1>
-      <p style={s.muted}>Public view • owner-only add/delete • cloud synced with Supabase</p>
+      <p style={s.muted}>Public view • owner-only password edit • cloud synced with Supabase</p>
       <p style={s.status}>Status: {status}</p>
+
       <div style={s.loginRow}>
         {isAdmin ? <>
           <span style={s.adminBadge}>Owner mode: {session.user.email}</span>
           <button style={s.btnLight} onClick={signOut}>Sign Out</button>
         </> : <>
-          <input style={s.loginInput} value={loginEmail} onChange={e=>setLoginEmail(e.target.value)} placeholder="Owner email to edit" />
-          <button style={s.btnLight} onClick={sendLoginLink}>Owner Login</button>
+          <input style={s.loginInput} value={email} onChange={e=>setEmail(e.target.value)} placeholder="Owner email" />
+          <input style={s.loginInput} value={password} onChange={e=>setPassword(e.target.value)} placeholder="Password" type="password" />
+          <button style={s.btnLight} onClick={passwordLogin}>Owner Login</button>
           <span style={s.viewBadge}>Public view-only mode</span>
         </>}
       </div>
@@ -190,7 +200,7 @@ export default function Page(){
 
     <section style={s.panel}>
       <h2>Maintenance Records</h2>
-      {!isAdmin && <p style={s.note}>You are viewing the public log. Only the owner can add or delete records.</p>}
+      {!isAdmin && <p style={s.note}>Public view-only mode. Only the owner can add or delete records.</p>}
       {entries.length===0?<p style={s.empty}>No records yet.</p>:<div style={{overflowX:'auto'}}><table style={s.table}>
         <thead><tr>{['Date','Mileage','Service','Oil','Filter','Cost','Photos','Notes',isAdmin?'Actions':''].map(x=><th style={s.th} key={x}>{x}</th>)}</tr></thead>
         <tbody>{entries.map(e=><tr key={e.id}>
