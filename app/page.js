@@ -50,30 +50,17 @@ export default function Page(){
   }
 
   async function passwordLogin(){
-    if(email.toLowerCase()!==allowedEmail){
-      alert('Only the owner email can edit this tracker.');
-      return;
-    }
-    if(!password){
-      alert('Enter your password.');
-      return;
-    }
+    if(email.toLowerCase()!==allowedEmail){alert('Only the owner email can edit this tracker.');return;}
+    if(!password){alert('Enter your password.');return;}
     setLoginStatus('Signing in...');
     const {error}=await supabase.auth.signInWithPassword({email,password});
-    if(error){
-      setLoginStatus('Login failed: '+error.message);
-      return;
-    }
-    setLoginStatus('Logged in.');
+    setLoginStatus(error?'Login failed: '+error.message:'Logged in.');
   }
 
   async function signOut(){await supabase.auth.signOut();}
 
   function requireAdmin(){
-    if(!isAdmin){
-      alert('Only the owner can change records. Everyone else is view-only.');
-      return false;
-    }
+    if(!isAdmin){alert('Only the owner can change records. Everyone else is view-only.');return false;}
     return true;
   }
 
@@ -81,10 +68,7 @@ export default function Page(){
     if(!requireAdmin())return;
     setStatus('Saving settings...');
     const {error}=await supabase.from('public_settings').upsert({
-      id:1,
-      current_mileage:Number(currentMileage||0),
-      interval_miles:Number(intervalMiles||5000),
-      updated_at:new Date().toISOString()
+      id:1,current_mileage:Number(currentMileage||0),interval_miles:Number(intervalMiles||5000),updated_at:new Date().toISOString()
     });
     if(error){setStatus('Save settings failed: '+error.message);return;}
     await loadPublicData();
@@ -106,16 +90,9 @@ export default function Page(){
     if(!form.date||!form.mileage){alert('Date and mileage are required.');return;}
     setStatus('Saving record...');
     const payload={
-      date:form.date,
-      mileage:Number(form.mileage),
-      service_type:form.service_type,
-      oil_spec:form.oil_spec,
-      oil_brand:form.oil_brand,
-      filter_brand:form.filter_brand,
-      cost:form.cost?Number(form.cost):null,
-      receipt_photo_url:form.receipt_photo_url||null,
-      odometer_photo_url:form.odometer_photo_url||null,
-      notes:form.notes||null
+      date:form.date,mileage:Number(form.mileage),service_type:form.service_type,oil_spec:form.oil_spec,
+      oil_brand:form.oil_brand,filter_brand:form.filter_brand,cost:form.cost?Number(form.cost):null,
+      receipt_photo_url:form.receipt_photo_url||null,odometer_photo_url:form.odometer_photo_url||null,notes:form.notes||null
     };
     const {error}=await supabase.from('maintenance_records').insert(payload);
     if(error){setStatus('Save failed: '+error.message);return;}
@@ -140,93 +117,156 @@ export default function Page(){
   const total=entries.reduce((s,e)=>s+Number(e.cost||0),0);
 
   if(!ready){
-    return <main style={s.page}><section style={s.hero}><h1>Missing Supabase Setup</h1><p>Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in Vercel Environment Variables.</p></section></main>
+    return <main className="page"><section className="hero"><h1>Missing Supabase Setup</h1><p>Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in Vercel Environment Variables.</p></section><Styles/></main>
   }
 
-  return <main style={s.page}>
-    <section style={s.hero}>
-      <h1 style={s.h1}>Malibu Maintenance Tracker</h1>
-      <p style={s.muted}>Public view • owner-only password edit • cloud synced with Supabase</p>
-      <p style={s.status}>Status: {status}</p>
+  return <main className="page">
+    <section className="hero">
+      <div className="heroTop">
+        <div>
+          <h1>Malibu Maintenance Tracker</h1>
+          <p>Public view • owner-only password edit • cloud synced with Supabase</p>
+        </div>
+        <span className="statusPill">{status}</span>
+      </div>
 
-      <div style={s.loginRow}>
+      <div className="loginRow">
         {isAdmin ? <>
-          <span style={s.adminBadge}>Admin Access</span>
-          <button style={s.btnLight} onClick={signOut}>Sign Out</button>
+          <span className="adminBadge">Admin Access</span>
+          <button className="lightButton" onClick={signOut}>Sign Out</button>
         </> : <>
-          <input style={s.loginInput} value={email} onChange={e=>setEmail(e.target.value)} placeholder="Owner email" />
-          <input style={s.loginInput} value={password} onChange={e=>setPassword(e.target.value)} placeholder="Password" type="password" />
-          <button style={s.btnLight} onClick={passwordLogin}>Owner Login</button>
-          <span style={s.viewBadge}>Public view-only mode</span>
+          <input className="loginInput" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Owner email" />
+          <input className="loginInput" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Password" type="password" />
+          <button className="lightButton" onClick={passwordLogin}>Owner Login</button>
+          <span className="viewBadge">Public view-only</span>
         </>}
       </div>
-      {loginStatus && <p style={s.status}>{loginStatus}</p>}
+      {loginStatus && <p className="loginStatus">{loginStatus}</p>}
     </section>
 
-    <section style={s.cards}>
+    <section className="cards">
       <Card t="Last Oil Change" v={last?`${Number(last.mileage).toLocaleString()} mi`:'None'} sub={last?.date||'No oil change logged'} />
       <Card t="Next Oil Due" v={next?`${next.toLocaleString()} mi`:'—'} sub="Based on interval" />
       <Card t="Miles Left" v={left!==null?`${left.toLocaleString()} mi`:'—'} sub={left!==null&&left<=0?'Oil change due now':left!==null?'Tracking active':'Current mileage not set'} warn={left!==null&&left<=500}/>
       <Card t="Total Cost" v={`$${total.toFixed(2)}`} sub={`${entries.length} records`} />
     </section>
 
-    {isAdmin && <section style={s.grid}>
-      <div style={s.panel}>
+    {isAdmin && <section className="adminGrid">
+      <div className="panel">
         <h2>Dashboard Settings</h2>
-        <Field label="Current Mileage"><input style={s.input} type="number" value={currentMileage} onChange={e=>setCurrentMileage(e.target.value)} /></Field>
-        <Field label="Oil Interval Miles"><input style={s.input} type="number" value={intervalMiles} onChange={e=>setIntervalMiles(e.target.value)} /></Field>
-        <button style={s.primary} onClick={saveSettings}>Save Dashboard Settings</button>
+        <Field label="Current Mileage"><input className="input" type="number" value={currentMileage} onChange={e=>setCurrentMileage(e.target.value)} /></Field>
+        <Field label="Oil Interval Miles"><input className="input" type="number" value={intervalMiles} onChange={e=>setIntervalMiles(e.target.value)} /></Field>
+        <button className="primary" onClick={saveSettings}>Save Dashboard Settings</button>
       </div>
 
-      <div style={s.panel}>
+      <div className="panel">
         <h2>Add Maintenance Record</h2>
-        <div style={s.form}>
-          <Field label="Date"><input style={s.input} type="date" value={form.date} onChange={e=>update('date',e.target.value)} /></Field>
-          <Field label="Mileage"><input style={s.input} type="number" value={form.mileage} onChange={e=>update('mileage',e.target.value)} /></Field>
+        <div className="formGrid">
+          <Field label="Date"><input className="input" type="date" value={form.date} onChange={e=>update('date',e.target.value)} /></Field>
+          <Field label="Mileage"><input className="input" type="number" value={form.mileage} onChange={e=>update('mileage',e.target.value)} /></Field>
           <Field label="Service Type"><Sel value={form.service_type} onChange={v=>update('service_type',v)} options={services}/></Field>
           <Field label="Oil Type/Spec"><Sel value={form.oil_spec} onChange={v=>update('oil_spec',v)} options={specs}/></Field>
           <Field label="Oil Brand"><Sel value={form.oil_brand} onChange={v=>update('oil_brand',v)} options={oils}/></Field>
           <Field label="Filter Brand"><Sel value={form.filter_brand} onChange={v=>update('filter_brand',v)} options={filters}/></Field>
-          <Field label="Cost"><input style={s.input} type="number" value={form.cost} onChange={e=>update('cost',e.target.value)} /></Field>
-          <Field label="Notes"><input style={s.input} value={form.notes} onChange={e=>update('notes',e.target.value)} /></Field>
+          <Field label="Cost"><input className="input" type="number" value={form.cost} onChange={e=>update('cost',e.target.value)} /></Field>
+          <Field label="Notes"><input className="input" value={form.notes} onChange={e=>update('notes',e.target.value)} /></Field>
         </div>
-        <div style={s.form}>
+        <div className="photoGrid">
           <Photo label="Receipt Photo" value={form.receipt_photo_url} onUploaded={url=>update('receipt_photo_url',url)} uploadPhoto={uploadPhoto}/>
           <Photo label="Odometer Photo" value={form.odometer_photo_url} onUploaded={url=>update('odometer_photo_url',url)} uploadPhoto={uploadPhoto}/>
         </div>
-        <button style={s.primary} onClick={addEntry}>Save Record</button>
+        <button className="primary" onClick={addEntry}>Save Record</button>
       </div>
     </section>}
 
-    <section style={s.panel}>
+    <section className="panel">
       <h2>Maintenance Records</h2>
-      {!isAdmin && <p style={s.note}>Public view-only mode. Only the owner can add or delete records.</p>}
-      {entries.length===0?<p style={s.empty}>No records yet.</p>:<div style={{overflowX:'auto'}}><table style={s.table}>
-        <thead><tr>{['Date','Mileage','Service','Oil','Filter','Cost','Photos','Notes',isAdmin?'Actions':''].map(x=><th style={s.th} key={x}>{x}</th>)}</tr></thead>
+      {!isAdmin && <p className="note">Public view-only mode. Only the owner can add or delete records.</p>}
+      {entries.length===0?<p className="empty">No records yet.</p>:<div className="tableWrap"><table>
+        <thead><tr>{['Date','Mileage','Service','Oil','Filter','Cost','Photos','Notes',isAdmin?'Actions':''].map(x=><th key={x}>{x}</th>)}</tr></thead>
         <tbody>{entries.map(e=><tr key={e.id}>
-          <td style={s.td}>{e.date}</td><td style={s.td}>{Number(e.mileage).toLocaleString()}</td><td style={s.td}>{e.service_type}</td><td style={s.td}>{e.oil_brand} • {e.oil_spec}</td><td style={s.td}>{e.filter_brand}</td><td style={s.td}>{e.cost?`$${Number(e.cost).toFixed(2)}`:'—'}</td>
-          <td style={s.td}><div style={{display:'flex',gap:8}}>{e.receipt_photo_url&&<a href={e.receipt_photo_url} target="_blank"><img src={e.receipt_photo_url} style={s.thumb}/></a>}{e.odometer_photo_url&&<a href={e.odometer_photo_url} target="_blank"><img src={e.odometer_photo_url} style={s.thumb}/></a>}</div></td>
-          <td style={s.td}>{e.notes||'—'}</td><td style={s.td}>{isAdmin&&<button style={s.del} onClick={()=>deleteEntry(e.id)}>Delete</button>}</td>
+          <td>{e.date}</td><td>{Number(e.mileage).toLocaleString()}</td><td>{e.service_type}</td><td>{e.oil_brand} • {e.oil_spec}</td><td>{e.filter_brand}</td><td>{e.cost?`$${Number(e.cost).toFixed(2)}`:'—'}</td>
+          <td><div className="photoThumbs">{e.receipt_photo_url&&<a href={e.receipt_photo_url} target="_blank"><img src={e.receipt_photo_url}/></a>}{e.odometer_photo_url&&<a href={e.odometer_photo_url} target="_blank"><img src={e.odometer_photo_url}/></a>}</div></td>
+          <td>{e.notes||'—'}</td><td>{isAdmin&&<button className="deleteBtn" onClick={()=>deleteEntry(e.id)}>Delete</button>}</td>
         </tr>)}</tbody>
       </table></div>}
     </section>
+    <Styles/>
   </main>
 }
 
 function Photo({label,value,onUploaded,uploadPhoto}){
   const [busy,setBusy]=useState(false);
-  return <div style={s.upload}><b>{label}</b><input style={{marginTop:10}} type="file" accept="image/*" onChange={async e=>{const file=e.target.files?.[0];if(!file)return;setBusy(true);const url=await uploadPhoto(file,label.toLowerCase().replaceAll(' ','-'));if(url)onUploaded(url);setBusy(false)}} />{busy&&<p>Uploading...</p>}{value&&<img src={value} style={s.preview}/>}</div>
+  return <div className="upload"><b>{label}</b><input type="file" accept="image/*" onChange={async e=>{const file=e.target.files?.[0];if(!file)return;setBusy(true);const url=await uploadPhoto(file,label.toLowerCase().replaceAll(' ','-'));if(url)onUploaded(url);setBusy(false)}} />{busy&&<p>Uploading...</p>}{value&&<img className="preview" src={value}/>}</div>
 }
-function Card({t,v,sub,warn}){return <div style={{...s.card,...(warn?s.warn:{})}}><p style={s.cardT}>{t}</p><p style={s.cardV}>{v}</p><p style={s.cardS}>{sub}</p></div>}
-function Field({label,children}){return <label style={s.label}><span>{label}</span>{children}</label>}
-function Sel({value,onChange,options}){return <select style={s.input} value={value} onChange={e=>onChange(e.target.value)}>{options.map(o=><option key={o}>{o}</option>)}</select>}
+function Card({t,v,sub,warn}){return <div className={`card ${warn?'warn':''}`}><p className="cardTitle">{t}</p><p className="cardValue">{v}</p><p className="cardSub">{sub}</p></div>}
+function Field({label,children}){return <label className="field"><span>{label}</span>{children}</label>}
+function Sel({value,onChange,options}){return <select className="input" value={value} onChange={e=>onChange(e.target.value)}>{options.map(o=><option key={o}>{o}</option>)}</select>}
 
-const s={
- page:{minHeight:'100vh',background:'#f1f5f9',color:'#0f172a',fontFamily:'Arial,sans-serif',padding:24},
- hero:{background:'#020617',color:'white',borderRadius:24,padding:28,marginBottom:20},h1:{fontSize:36,margin:0},muted:{color:'#cbd5e1'},status:{color:'#93c5fd',fontWeight:700},
- loginRow:{display:'flex',gap:10,flexWrap:'wrap',alignItems:'center'},loginInput:{border:'1px solid #64748b',borderRadius:14,padding:12,fontSize:15},btnLight:{background:'white',color:'#020617',border:0,borderRadius:14,padding:'12px 18px',fontWeight:700,cursor:'pointer'},adminBadge:{background:'#dcfce7',color:'#166534',borderRadius:999,padding:'8px 12px',fontWeight:800},viewBadge:{background:'#dbeafe',color:'#1e3a8a',borderRadius:999,padding:'8px 12px',fontWeight:800},
- cards:{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(210px,1fr))',gap:16,marginBottom:20},card:{background:'white',borderRadius:22,padding:20,boxShadow:'0 10px 24px rgba(15,23,42,.08)'},warn:{background:'#ffedd5'},cardT:{color:'#64748b',fontWeight:700,margin:0},cardV:{fontSize:28,fontWeight:800,margin:'8px 0'},cardS:{color:'#64748b',margin:0},
- grid:{display:'grid',gridTemplateColumns:'minmax(250px,1fr) minmax(300px,2fr)',gap:20,marginBottom:20},panel:{background:'white',borderRadius:22,padding:22,boxShadow:'0 10px 24px rgba(15,23,42,.08)',marginBottom:20},form:{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(210px,1fr))',gap:14,marginBottom:16},
- label:{display:'grid',gap:7,fontWeight:700,color:'#334155',marginBottom:14},input:{border:'1px solid #cbd5e1',borderRadius:14,padding:12,fontSize:15},primary:{width:'100%',background:'#020617',color:'white',border:0,borderRadius:16,padding:16,fontSize:18,fontWeight:800,cursor:'pointer'},note:{background:'#dbeafe',color:'#1e3a8a',borderRadius:16,padding:14},
- upload:{border:'2px dashed #cbd5e1',borderRadius:18,padding:16,background:'#f8fafc'},preview:{marginTop:12,width:'100%',height:150,objectFit:'cover',borderRadius:14},thumb:{width:54,height:54,objectFit:'cover',borderRadius:10},empty:{background:'#f8fafc',borderRadius:18,padding:28,textAlign:'center',color:'#64748b'},table:{width:'100%',borderCollapse:'collapse',minWidth:900},th:{textAlign:'left',borderBottom:'1px solid #cbd5e1',padding:10,color:'#475569'},td:{borderBottom:'1px solid #e2e8f0',padding:10,verticalAlign:'top'},del:{background:'#fee2e2',color:'#991b1b',border:0,borderRadius:10,padding:'8px 10px',cursor:'pointer'}
-};
+function Styles(){
+  return <style jsx global>{`
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: #f1f5f9; }
+    body { overflow-x: hidden; }
+    .page { min-height: 100vh; background: #f1f5f9; color: #0f172a; font-family: Arial, sans-serif; padding: 18px; max-width: 100vw; overflow-x: hidden; }
+    .hero { background: #020617; color: white; border-radius: 24px; padding: 26px; margin-bottom: 18px; box-shadow: 0 16px 40px rgba(15,23,42,.16); }
+    .heroTop { display: flex; gap: 16px; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; }
+    .hero h1 { font-size: clamp(28px, 5vw, 42px); line-height: 1.05; margin: 0; }
+    .hero p { color: #cbd5e1; font-size: 16px; line-height: 1.45; margin: 12px 0 0; }
+    .statusPill { background: #dbeafe; color: #1e3a8a; padding: 10px 14px; border-radius: 999px; font-weight: 800; white-space: nowrap; }
+    .loginRow { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 18px; }
+    .loginInput { border: 1px solid #64748b; border-radius: 14px; padding: 13px 14px; font-size: 16px; min-height: 48px; max-width: 100%; }
+    .lightButton { background: white; color: #020617; border: 0; border-radius: 14px; padding: 13px 18px; min-height: 48px; font-weight: 800; cursor: pointer; }
+    .adminBadge, .viewBadge { border-radius: 999px; padding: 12px 15px; font-weight: 900; display: inline-flex; align-items: center; min-height: 44px; }
+    .adminBadge { background: #dcfce7; color: #166534; }
+    .viewBadge { background: #dbeafe; color: #1e3a8a; }
+    .loginStatus { color: #93c5fd !important; font-weight: 800; }
+
+    .cards { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 16px; margin-bottom: 18px; }
+    .card { background: white; border-radius: 22px; padding: 20px; box-shadow: 0 10px 24px rgba(15,23,42,.08); min-width: 0; }
+    .card.warn { background: #ffedd5; }
+    .cardTitle { color: #64748b; font-weight: 800; margin: 0; }
+    .cardValue { font-size: clamp(26px, 5vw, 34px); font-weight: 900; margin: 10px 0; word-break: break-word; }
+    .cardSub { color: #64748b; margin: 0; }
+
+    .adminGrid { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.5fr); gap: 18px; align-items: start; }
+    .panel { background: white; border-radius: 22px; padding: 22px; box-shadow: 0 10px 24px rgba(15,23,42,.08); margin-bottom: 18px; min-width: 0; }
+    .panel h2 { font-size: clamp(26px, 4vw, 34px); line-height: 1.1; margin: 0 0 20px; }
+    .formGrid, .photoGrid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; margin-bottom: 16px; }
+    .field { display: grid; gap: 7px; font-weight: 800; color: #334155; margin-bottom: 14px; min-width: 0; }
+    .input { width: 100%; border: 1px solid #cbd5e1; border-radius: 14px; padding: 13px 14px; font-size: 16px; min-height: 48px; background: white; max-width: 100%; }
+    .primary { width: 100%; background: #020617; color: white; border: 0; border-radius: 16px; padding: 17px; font-size: 19px; font-weight: 900; cursor: pointer; min-height: 54px; }
+    .note { background: #dbeafe; color: #1e3a8a; border-radius: 16px; padding: 14px; }
+    .upload { border: 2px dashed #cbd5e1; border-radius: 18px; padding: 16px; background: #f8fafc; min-width: 0; }
+    .upload input { display: block; margin-top: 12px; max-width: 100%; }
+    .preview { margin-top: 12px; width: 100%; height: 150px; object-fit: cover; border-radius: 14px; }
+    .empty { background: #f8fafc; border-radius: 18px; padding: 28px; text-align: center; color: #64748b; }
+    .tableWrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { width: 100%; border-collapse: collapse; min-width: 900px; }
+    th { text-align: left; border-bottom: 1px solid #cbd5e1; padding: 10px; color: #475569; }
+    td { border-bottom: 1px solid #e2e8f0; padding: 10px; vertical-align: top; }
+    .photoThumbs { display:flex; gap:8px; }
+    .photoThumbs img { width:54px; height:54px; object-fit:cover; border-radius:10px; }
+    .deleteBtn { background:#fee2e2; color:#991b1b; border:0; border-radius:10px; padding:8px 10px; cursor:pointer; }
+
+    @media (max-width: 900px) {
+      .cards { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .adminGrid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 600px) {
+      .page { padding: 12px; }
+      .hero { border-radius: 22px; padding: 22px; }
+      .heroTop { display: block; }
+      .statusPill { display: inline-flex; margin-top: 14px; white-space: normal; }
+      .loginRow { display: grid; grid-template-columns: 1fr; width: 100%; }
+      .loginInput, .lightButton, .adminBadge, .viewBadge { width: 100%; justify-content: center; text-align: center; }
+      .cards { grid-template-columns: 1fr; gap: 14px; }
+      .card { padding: 20px 18px; }
+      .panel { border-radius: 22px; padding: 20px; }
+      .formGrid, .photoGrid { grid-template-columns: 1fr; }
+      .primary { position: sticky; bottom: 10px; z-index: 5; box-shadow: 0 12px 30px rgba(2,6,23,.25); }
+      table { min-width: 760px; }
+    }
+  `}</style>
+}

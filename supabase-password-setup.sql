@@ -1,7 +1,4 @@
--- PASSWORD LOGIN VERSION
--- Public view, only gageshaw73@gmail.com can add/delete/edit.
--- Run this in Supabase SQL Editor.
-
+-- Same password login SQL. Run only if you have not already run setup.
 create table if not exists public_settings (
   id integer primary key default 1,
   current_mileage integer default 0,
@@ -34,36 +31,21 @@ drop policy if exists "owner insert records" on maintenance_records;
 drop policy if exists "owner delete records" on maintenance_records;
 drop policy if exists "owner update records" on maintenance_records;
 
-create policy "public read settings"
-on public_settings for select
-to anon, authenticated
-using (true);
+create policy "public read settings" on public_settings for select to anon, authenticated using (true);
+create policy "public read records" on maintenance_records for select to anon, authenticated using (true);
 
-create policy "public read records"
-on maintenance_records for select
-to anon, authenticated
-using (true);
-
-create policy "owner write settings"
-on public_settings for all
-to authenticated
+create policy "owner write settings" on public_settings for all to authenticated
 using ((auth.jwt() ->> 'email') = 'gageshaw73@gmail.com')
 with check ((auth.jwt() ->> 'email') = 'gageshaw73@gmail.com');
 
-create policy "owner insert records"
-on maintenance_records for insert
-to authenticated
+create policy "owner insert records" on maintenance_records for insert to authenticated
 with check ((auth.jwt() ->> 'email') = 'gageshaw73@gmail.com');
 
-create policy "owner update records"
-on maintenance_records for update
-to authenticated
+create policy "owner update records" on maintenance_records for update to authenticated
 using ((auth.jwt() ->> 'email') = 'gageshaw73@gmail.com')
 with check ((auth.jwt() ->> 'email') = 'gageshaw73@gmail.com');
 
-create policy "owner delete records"
-on maintenance_records for delete
-to authenticated
+create policy "owner delete records" on maintenance_records for delete to authenticated
 using ((auth.jwt() ->> 'email') = 'gageshaw73@gmail.com');
 
 insert into storage.buckets (id, name, public)
@@ -74,26 +56,14 @@ drop policy if exists "public read photos" on storage.objects;
 drop policy if exists "owner upload photos" on storage.objects;
 drop policy if exists "owner delete photos" on storage.objects;
 
-create policy "public read photos"
-on storage.objects for select
-to anon, authenticated
+create policy "public read photos" on storage.objects for select to anon, authenticated
 using (bucket_id = 'maintenance-photos');
 
-create policy "owner upload photos"
-on storage.objects for insert
-to authenticated
-with check (
-  bucket_id = 'maintenance-photos'
-  and (auth.jwt() ->> 'email') = 'gageshaw73@gmail.com'
-);
+create policy "owner upload photos" on storage.objects for insert to authenticated
+with check (bucket_id = 'maintenance-photos' and (auth.jwt() ->> 'email') = 'gageshaw73@gmail.com');
 
-create policy "owner delete photos"
-on storage.objects for delete
-to authenticated
-using (
-  bucket_id = 'maintenance-photos'
-  and (auth.jwt() ->> 'email') = 'gageshaw73@gmail.com'
-);
+create policy "owner delete photos" on storage.objects for delete to authenticated
+using (bucket_id = 'maintenance-photos' and (auth.jwt() ->> 'email') = 'gageshaw73@gmail.com');
 
 insert into public_settings (id, current_mileage, interval_miles)
 values (1, 0, 5000)
